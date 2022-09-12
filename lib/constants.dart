@@ -215,6 +215,17 @@ class Constants {
       decoration: TextDecoration.underline,
       fontFamily: 'iranyekan');
 
+  static const TextStyle TEXT_STYLE_BLUE_MOOD_SMALL = TextStyle(
+      color: COLOR_BLUE,
+      fontSize: SMALL_TEXT_FONT_SIZE,
+      fontWeight: FontWeight.bold,
+      fontFamily: 'iranyekan');
+  static const TextStyle TEXT_STYLE_GREEN_MOOD_SMALL = TextStyle(
+      color: COLOR_GREE,
+      fontSize: SMALL_TEXT_FONT_SIZE,
+      fontWeight: FontWeight.bold,
+      fontFamily: 'iranyekan');
+
 
   // Colors
   static const Color COLOR_MAIN_DARK = Color.fromRGBO(0, 0, 0, 1);
@@ -224,6 +235,8 @@ class Constants {
   static const Color COLOR_WHITE_MAIN = Color.fromRGBO(255, 255, 255, 1);
   static const Color COLOR_RED_ERROR = Color.fromRGBO(175, 0, 0, 1);
   static const Color COLOR_BACKGROUND = Color.fromRGBO(29, 34, 38, 1);
+  static const Color COLOR_BLUE = Colors.blueAccent;
+  static const Color COLOR_GREE = Colors.green;
 
 
 }

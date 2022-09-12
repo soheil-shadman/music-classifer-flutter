@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mood_classifer/api/api.dart';
 import 'package:mood_classifer/main.dart';
+import 'package:mood_classifer/models/PredictModel.dart';
 import 'package:mood_classifer/utils/file-utils.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
@@ -55,6 +56,8 @@ class _HomePageState extends State<HomePage> {
   bool _resultLoading = false;
   bool _resultResIsError = false;
   String _resultRes = '';
+  List<PredictModel> _predictedModels = [];
+  List<Widget> _predictecdWidget = [];
 
   _requestAudioPermission() async {
     if (Platform.isAndroid) {
@@ -102,6 +105,8 @@ class _HomePageState extends State<HomePage> {
         _resultLoading = false;
         _resultResIsError = false;
         _resultRes = '';
+        _predictedModels = [];
+        _predictecdWidget = [];
       });
       await record.start(
         path: Constants.SAVE_AUDIO_PATH_FOLDER + filename,
@@ -183,7 +188,7 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                       width: width * 8 / 10,
                       child: const Text(
-                        'ابتدا صدا را ضبط کنید ( بین 3 تا 16 ثانیه )',
+                        'ابتدا صدا را ضبط کنید ( بین 6 تا 16 ثانیه )',
                         style: Constants.TEXT_STYLE_WHITE_SMALL,
                       )),
                 ),
@@ -193,9 +198,9 @@ class _HomePageState extends State<HomePage> {
                       callBack: () {
                         if (!_isActionsDisabled) {
                           if (_isRecording) {
-                            if (16 - _recordRemainDuration <= 3) {
+                            if (16 - _recordRemainDuration <= 6) {
                               MyApp.showSnackBar(context,
-                                  content: "حداقل 3 ثانیه صبر کنید",
+                                  content: "حداقل 6.1 ثانیه صبر کنید",
                                   isError: true);
                             } else {
                               _recordRemainDuration = 16;
@@ -456,7 +461,7 @@ class _HomePageState extends State<HomePage> {
                             padding: EdgeInsets.only(top: height / 80),
                             child: MyButton(
                                 callBack: () {
-                                  _getResult();
+                                  _getResult(height,width);
                                 },
                                 indicatorColor: Constants.COLOR_MAIN_DARK,
                                 isLoading: _resultLoading,
@@ -468,17 +473,27 @@ class _HomePageState extends State<HomePage> {
                                 buttonTextStyle:
                                     Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD),
                           ),
-                          Padding(
-                            padding: EdgeInsets.only(top: height / 80),
-                            child: Container(
-                                width: width * 8 / 10,
-                                child: Text(
-                                  'گزارشنهایی : $_resultRes',
-                                  style: _resultResIsError
-                                      ? Constants.TEXT_STYLE_ERROR_SMALL
-                                      : Constants.TEXT_STYLE_WHITE_SMALL,
-                                )),
-                          ),
+                          _resultResIsError
+                              ? Padding(
+                                  padding: EdgeInsets.only(top: height / 80),
+                                  child: Container(
+                                      width: width * 8 / 10,
+                                      child: Text(
+                                        'جواب سرور : $_resultRes',
+                                        style: _resultResIsError
+                                            ? Constants.TEXT_STYLE_ERROR_SMALL
+                                            : Constants.TEXT_STYLE_WHITE_SMALL,
+                                      )),
+                                )
+                              : Container(),
+                          _predictedModels.length != 0
+                              ? Padding(
+                                  padding: EdgeInsets.only(top: height / 20),
+                                  child: Column(
+                                    children: _predictecdWidget,
+                                  ),
+                                )
+                              : Container(),
                           Padding(
                             padding: EdgeInsets.only(top: height / 20),
                             child: Container(),
@@ -489,6 +504,70 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           )),
+    );
+  }
+
+  _predictedItemWidget(PredictModel model, double height, double width) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: height / 40),
+      child: Container(
+        width: width * 8 / 10,
+        child: Column(
+          children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text(
+                'تاریخ',
+                style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
+              ),
+              Text(
+                model.date,
+                style: Constants.TEXT_STYLE_WHITE_SMALL,
+              )
+            ]),
+            Padding(
+              padding: EdgeInsets.only(top: height / 80),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'نام فایل',
+                      style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
+                    ),
+                    Text(
+                      model.filename,
+                      style: Constants.TEXT_STYLE_WHITE_SMALL,
+                    )
+                  ]),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top: height / 80),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'مود',
+                      style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
+                    ),
+                    Text(
+                      model.mood,
+                      style:model.mood=="neutral"? Constants.TEXT_STYLE_WHITE_SMALL_BOLD:model.mood=="positive"?Constants.TEXT_STYLE_GREEN_MOOD_SMALL:Constants.TEXT_STYLE_BLUE_MOOD_SMALL,
+                    )
+                  ]),
+            ),
+        Padding(
+            padding: EdgeInsets.only(top: height / 80),
+          child: Container(
+            height: 0.5,
+            width: width * 8 / 10,
+            decoration: BoxDecoration(
+              color: Constants.COLOR_WHITE_MAIN,
+              borderRadius: BorderRadius.circular(Constants.TEXT_INPUT_ROUNDNESS),
+            ),
+          ),
+        )
+          ],
+        ),
+      ),
     );
   }
 
@@ -558,8 +637,8 @@ class _HomePageState extends State<HomePage> {
       _predictResIsError = false;
     });
 
-    var response = await API.Instance!
-        .post("model-controller/predict-items", {"result_number": 1});
+    var response = await API.Instance!.post("model-controller/predict-items",
+        {"result_number": 1, "delete_data": "True"});
     if (response.isFailed) {
       setState(() {
         _predictLoading = false;
@@ -586,8 +665,10 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  _getResult() async {
+  _getResult(double height , double width) async {
     setState(() {
+      _predictedModels = [];
+      _predictecdWidget = [];
       _resultLoading = true;
       _isActionsDisabled = true;
       _resultResIsError = false;
@@ -613,7 +694,13 @@ class _HomePageState extends State<HomePage> {
       });
       return;
     }
+    for (var i = 0; i < response.data.length; i++) {
+      _predictedModels.add(PredictModel.fromJson(response.data[i]));
+    }
     setState(() {
+      for (var i = 0; i < _predictedModels.length; i++) {
+        _predictecdWidget.add(_predictedItemWidget(_predictedModels[i],height,width));
+      }
       _resultLoading = false;
       _isActionsDisabled = false;
       _resultRes = response.data.toString();

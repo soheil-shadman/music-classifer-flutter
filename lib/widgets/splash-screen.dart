@@ -38,59 +38,62 @@ class _SplashScreenState extends State<SplashScreen> {
           color: Constants.COLOR_MAIN_DARK,
           child: Stack(
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(top: height / 2),
-                    child: Text(
-                      "تشخیص مود راننده",
-                      style: Constants.TEXT_STYLE_WHITE_TITLE_BOLD,
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      _error != ''
-                          ? Padding(
-                              padding: EdgeInsets.only(bottom: height / 40),
-                              child: Text(
-                                _error,
-                                style: Constants.TEXT_STYLE_ERROR_MEDIUM,
-                              ),
-                            )
-                          : Container(),
-                      Padding(
-                        padding: EdgeInsets.only(bottom: height / 40),
-                        child: _error != '' && !_loading
-                            ? MyButton(
-                                callBack: () {
-                                  _boot();
-                                },
-                                buttonText: "تلاش مجدد",
-                                width: width * 8 / 10,
-                                buttonColor: Constants.COLOR_WHITE_MAIN,
-                                overlayColor: Constants.COLOR_BUTTON_OVERLAY
-                                    .withOpacity(0.5),
-                                buttonTextStyle:
-                                    Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD)
-                            : Container(
-                                height: width / 6,
-                                width: width / 6,
-                                child: const LoadingIndicator(
-                                  indicatorType: Indicator.pacman,
-                                  colors: [
-                                    Constants.COLOR_WHITE_MAIN,
-                                  ],
-                                  strokeWidth: 2,
-                                  backgroundColor: Constants.COLOR_MAIN_DARK,
-                                  pathBackgroundColor:
-                                      Constants.COLOR_MAIN_DARK,
-                                ),
-                              ),
+              Align(
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: height / 2),
+                      child: Text(
+                        "تشخیص مود راننده",
+                        style: Constants.TEXT_STYLE_WHITE_TITLE_BOLD,
                       ),
-                    ],
-                  )
-                ],
+                    ),
+                    Column(
+                      children: [
+                        _error != ''
+                            ? Padding(
+                                padding: EdgeInsets.only(bottom: height / 40),
+                                child: Text(
+                                  _error,
+                                  style: Constants.TEXT_STYLE_ERROR_MEDIUM,
+                                ),
+                              )
+                            : Container(),
+                        Padding(
+                          padding: EdgeInsets.only(bottom: height / 40),
+                          child: _error != '' && !_loading
+                              ? MyButton(
+                                  callBack: () {
+                                    _boot();
+                                  },
+                                  buttonText: "تلاش مجدد",
+                                  width: width * 8 / 10,
+                                  buttonColor: Constants.COLOR_WHITE_MAIN,
+                                  overlayColor: Constants.COLOR_BUTTON_OVERLAY
+                                      .withOpacity(0.5),
+                                  buttonTextStyle:
+                                      Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD)
+                              : Container(
+                                  height: width / 6,
+                                  width: width / 6,
+                                  child: const LoadingIndicator(
+                                    indicatorType: Indicator.pacman,
+                                    colors: [
+                                      Constants.COLOR_WHITE_MAIN,
+                                    ],
+                                    strokeWidth: 2,
+                                    backgroundColor: Constants.COLOR_MAIN_DARK,
+                                    pathBackgroundColor:
+                                        Constants.COLOR_MAIN_DARK,
+                                  ),
+                                ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
               ),
               Align(
 
