@@ -6,7 +6,7 @@ class Constants {
   static const String SAVE_AUDIO_PATH = 'raw_recorded_data';
   static String SAVE_AUDIO_PATH_FOLDER = '';
   static String LOCAL_HOST = '192.168.1.2:8080';
-  static String REAL_HOST = '192.168.1.2:8080';
+  static String REAL_HOST = '194.59.170.180:8080';
 
   // Assets
   static const String REEL_PLACE_HOLDER_IMAGE =
