@@ -28,10 +28,12 @@ class _HomePageState extends State<HomePage> {
 
   // Recording
   late Timer _timer;
-  int _recordRemainDuration = 16;
+  int _recordRemainDuration = 25;
+  int _recordTime = 0;
   bool _isRecording = false;
   bool _hasFile = false;
   String filename = "";
+  int _numberOfFrames = 0;
 
   // Upload
   bool _uploadLoading = false;
@@ -56,6 +58,9 @@ class _HomePageState extends State<HomePage> {
   bool _resultLoading = false;
   bool _resultResIsError = false;
   String _resultRes = '';
+  int _posMoodNum = 0;
+  int _negMoodCount = 0;
+  int _nutMoodCount = 0;
   List<PredictModel> _predictedModels = [];
   List<Widget> _predictecdWidget = [];
 
@@ -84,40 +89,46 @@ class _HomePageState extends State<HomePage> {
           .toString()
           .replaceAll(" ", "_")
           .replaceAll(':', "_")
-          .replaceAll('-', '_') .replaceAll('.', '_');
+          .replaceAll('-', '_')
+          .replaceAll('.', '_');
 
-    filename = 'raw_data_' + now_str + '.wav';
+      filename = 'raw_data_' + now_str + '.wav';
 
-    setState(() {
-    _isRecording = true;
-    _hasFile = false;
-    _hasUploaded = false;
-    _uploadRes = '';
-    _uploadResIsError = false;
+      setState(() {
+        _isRecording = true;
+        _hasFile = false;
+        _numberOfFrames = 0;
+        _recordTime = 0;
+        _hasUploaded = false;
+        _uploadRes = '';
+        _uploadResIsError = false;
 
-    _processLoading = false;
-    _hasProcessed = false;
-    _processResIsError = false;
-    _processRes = '';
-    _predictLoading = false;
-    _haspredicted = false;
-    _predictResIsError = false;
-    _predictRes = '';
-    _resultLoading = false;
-    _resultResIsError = false;
-    _resultRes = '';
-    _predictedModels = [];
-    _predictecdWidget = [];
-    });
-    await record.start(
-    path: Constants.SAVE_AUDIO_PATH_FOLDER + filename,
-    encoder: AudioEncoder.wav, // by default
-    bitRate: 128000, // by default
-    samplingRate: 44100, // by default
-    );
-    startTimer();
+        _processLoading = false;
+        _hasProcessed = false;
+        _processResIsError = false;
+        _processRes = '';
+        _predictLoading = false;
+        _haspredicted = false;
+        _predictResIsError = false;
+        _predictRes = '';
+        _resultLoading = false;
+        _resultResIsError = false;
+        _resultRes = '';
+        _predictedModels = [];
+        _predictecdWidget = [];
+        _posMoodNum = 0;
+        _negMoodCount = 0;
+        _nutMoodCount = 0;
+      });
+      await record.start(
+        path: Constants.SAVE_AUDIO_PATH_FOLDER + filename,
+        encoder: AudioEncoder.wav, // by default
+        bitRate: 128000, // by default
+        samplingRate: 44100, // by default
+      );
+      startTimer();
     } catch (e) {
-    _stopRecording();
+      _stopRecording();
     }
   }
 
@@ -125,16 +136,20 @@ class _HomePageState extends State<HomePage> {
     const oneSec = Duration(seconds: 1);
     _timer = Timer.periodic(
       oneSec,
-          (Timer timer) {
+      (Timer timer) {
         if (_recordRemainDuration == 0) {
           setState(() {
             timer.cancel();
             _stopRecording();
-            _recordRemainDuration = 16;
+            _recordRemainDuration = 25;
           });
         } else {
           setState(() {
             _recordRemainDuration--;
+            _recordTime++;
+            if (_recordTime % 3 == 0) {
+              _numberOfFrames++;
+            }
           });
         }
       },
@@ -164,14 +179,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery
-        .of(context)
-        .size
-        .width;
-    double height = MediaQuery
-        .of(context)
-        .size
-        .height;
+    double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: Constants.COLOR_MAIN_DARK,
       body: Container(
@@ -195,7 +204,7 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                       width: width * 8 / 10,
                       child: const Text(
-                        'ابتدا صدا را ضبط کنید ( بین 6 تا 16 ثانیه )',
+                        'ابتدا صدا را ضبط کنید ( بین 6 تا 25 ثانیه )',
                         style: Constants.TEXT_STYLE_WHITE_SMALL,
                       )),
                 ),
@@ -205,12 +214,12 @@ class _HomePageState extends State<HomePage> {
                       callBack: () {
                         if (!_isActionsDisabled) {
                           if (_isRecording) {
-                            if (16 - _recordRemainDuration <= 6) {
+                            if (25 - _recordRemainDuration <= 6) {
                               MyApp.showSnackBar(context,
                                   content: "حداقل 6.1 ثانیه صبر کنید",
                                   isError: true);
                             } else {
-                              _recordRemainDuration = 16;
+                              _recordRemainDuration = 25;
                               _timer.cancel();
                               _stopRecording();
                             }
@@ -224,7 +233,7 @@ class _HomePageState extends State<HomePage> {
                         } else {
                           MyApp.showSnackBar(context,
                               content:
-                              "ضبط در هنگام فعایتهای دیگر غیر فعال است",
+                                  "ضبط در هنگام فعایتهای دیگر غیر فعال است",
                               isError: true);
                         }
                       },
@@ -232,7 +241,7 @@ class _HomePageState extends State<HomePage> {
                       width: width * 8 / 10,
                       buttonColor: Constants.COLOR_WHITE_MAIN,
                       overlayColor:
-                      Constants.COLOR_BUTTON_OVERLAY.withOpacity(0.5),
+                          Constants.COLOR_BUTTON_OVERLAY.withOpacity(0.5),
                       buttonTextStyle: Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD),
                 ),
                 Padding(
@@ -240,7 +249,16 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                       width: width * 8 / 10,
                       child: Text(
-                        'زمان باقی مانده : $_recordRemainDuration',
+                        'ثانیه ضبط شده : $_recordTime',
+                        style: Constants.TEXT_STYLE_WHITE_SMALL,
+                      )),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(top: height / 80),
+                  child: Container(
+                      width: width * 8 / 10,
+                      child: Text(
+                        'تعداد فریم ها : $_numberOfFrames',
                         style: Constants.TEXT_STYLE_WHITE_SMALL,
                       )),
                 ),
@@ -259,254 +277,313 @@ class _HomePageState extends State<HomePage> {
                 ),
                 _hasFile && !_isRecording
                     ? Column(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 20),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: const Text(
-                            'مرحله 2',
-                            style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: const Text(
-                            'سپس دکمه آپلود را زده و منتظر بمانید',
-                            style: Constants.TEXT_STYLE_WHITE_SMALL,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: MyButton(
-                          callBack: () {
-                            if (!_isActionsDisabled) {
-                              _uploadAudio();
-                            } else {
-                              MyApp.showSnackBar(context,
-                                  content:
-                                  "آپلود در هنگام فعایتهای دیگر غیر فعال است",
-                                  isError: true);
-                            }
-                          },
-                          buttonText: 'آپلود فایل',
-                          width: width * 8 / 10,
-                          indicatorColor: Constants.COLOR_MAIN_DARK,
-                          buttonColor: Constants.COLOR_WHITE_MAIN,
-                          isLoading: _uploadLoading,
-                          overlayColor: Constants.COLOR_BUTTON_OVERLAY
-                              .withOpacity(0.5),
-                          buttonTextStyle:
-                          Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: Text(
-                            'جواب سرور : $_uploadRes',
-                            style: _uploadResIsError
-                                ? Constants.TEXT_STYLE_ERROR_SMALL
-                                : Constants.TEXT_STYLE_WHITE_SMALL,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 40),
-                      child: _divider(height, width),
-                    ),
-                  ],
-                )
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 20),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: const Text(
+                                  'مرحله 2',
+                                  style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: const Text(
+                                  'سپس دکمه آپلود را زده و منتظر بمانید',
+                                  style: Constants.TEXT_STYLE_WHITE_SMALL,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: MyButton(
+                                callBack: () {
+                                  if (!_isActionsDisabled) {
+                                    _uploadAudio();
+                                  } else {
+                                    MyApp.showSnackBar(context,
+                                        content:
+                                            "آپلود در هنگام فعایتهای دیگر غیر فعال است",
+                                        isError: true);
+                                  }
+                                },
+                                buttonText: 'آپلود فایل',
+                                width: width * 8 / 10,
+                                indicatorColor: Constants.COLOR_MAIN_DARK,
+                                buttonColor: Constants.COLOR_WHITE_MAIN,
+                                isLoading: _uploadLoading,
+                                overlayColor: Constants.COLOR_BUTTON_OVERLAY
+                                    .withOpacity(0.5),
+                                buttonTextStyle:
+                                    Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: Text(
+                                  'جواب سرور : $_uploadRes',
+                                  style: _uploadResIsError
+                                      ? Constants.TEXT_STYLE_ERROR_SMALL
+                                      : Constants.TEXT_STYLE_WHITE_SMALL,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 40),
+                            child: _divider(height, width),
+                          ),
+                        ],
+                      )
                     : Container(),
                 _hasUploaded
                     ? Column(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 20),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: const Text(
-                            'مرحله 3',
-                            style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: const Text(
-                            'سپس دکمه پیش پردازش را زده و منتظر بمانید',
-                            style: Constants.TEXT_STYLE_WHITE_SMALL,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: MyButton(
-                          callBack: () {
-                            if (!_isActionsDisabled) {
-                              _preprocessData();
-                            } else {
-                              MyApp.showSnackBar(context,
-                                  content:
-                                  "پیشپردازش در هنگام فعایتهای دیگر غیر فعال است",
-                                  isError: true);
-                            }
-                          },
-                          indicatorColor: Constants.COLOR_MAIN_DARK,
-                          isLoading: _processLoading,
-                          buttonText: 'پیشپردازش',
-                          width: width * 8 / 10,
-                          buttonColor: Constants.COLOR_WHITE_MAIN,
-                          overlayColor: Constants.COLOR_BUTTON_OVERLAY
-                              .withOpacity(0.5),
-                          buttonTextStyle:
-                          Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: Text(
-                            'جواب سرور : $_processRes',
-                            style: _processResIsError
-                                ? Constants.TEXT_STYLE_ERROR_SMALL
-                                : Constants.TEXT_STYLE_WHITE_SMALL,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 40),
-                      child: _divider(height, width),
-                    ),
-                  ],
-                )
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 20),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: const Text(
+                                  'مرحله 3',
+                                  style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: const Text(
+                                  'سپس دکمه پیش پردازش را زده و منتظر بمانید',
+                                  style: Constants.TEXT_STYLE_WHITE_SMALL,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: MyButton(
+                                callBack: () {
+                                  if (!_isActionsDisabled) {
+                                    _preprocessData();
+                                  } else {
+                                    MyApp.showSnackBar(context,
+                                        content:
+                                            "پیشپردازش در هنگام فعایتهای دیگر غیر فعال است",
+                                        isError: true);
+                                  }
+                                },
+                                indicatorColor: Constants.COLOR_MAIN_DARK,
+                                isLoading: _processLoading,
+                                buttonText: 'پیشپردازش',
+                                width: width * 8 / 10,
+                                buttonColor: Constants.COLOR_WHITE_MAIN,
+                                overlayColor: Constants.COLOR_BUTTON_OVERLAY
+                                    .withOpacity(0.5),
+                                buttonTextStyle:
+                                    Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: Text(
+                                  'جواب سرور : $_processRes',
+                                  style: _processResIsError
+                                      ? Constants.TEXT_STYLE_ERROR_SMALL
+                                      : Constants.TEXT_STYLE_WHITE_SMALL,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 40),
+                            child: _divider(height, width),
+                          ),
+                        ],
+                      )
                     : Container(),
                 _hasProcessed
                     ? Column(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 20),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: const Text(
-                            'مرحله 4',
-                            style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: const Text(
-                            'سپس دکمه پیشبینی و طبقه بندی را زده و منتظر بمانید',
-                            style: Constants.TEXT_STYLE_WHITE_SMALL,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: MyButton(
-                          callBack: () {
-                            if (!_isActionsDisabled) {
-                              _predictData();
-                            } else {
-                              MyApp.showSnackBar(context,
-                                  content:
-                                  "پیشبینی و طبقه بندی در هنگام فعایتهای دیگر غیر فعال است",
-                                  isError: true);
-                            }
-                          },
-                          indicatorColor: Constants.COLOR_MAIN_DARK,
-                          isLoading: _predictLoading,
-                          buttonText: 'پیشبینی و طبقه بندی',
-                          width: width * 8 / 10,
-                          buttonColor: Constants.COLOR_WHITE_MAIN,
-                          overlayColor: Constants.COLOR_BUTTON_OVERLAY
-                              .withOpacity(0.5),
-                          buttonTextStyle:
-                          Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: Text(
-                            'جواب سرور : $_predictRes',
-                            style: _predictResIsError
-                                ? Constants.TEXT_STYLE_ERROR_SMALL
-                                : Constants.TEXT_STYLE_WHITE_SMALL,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 40),
-                      child: _divider(height, width),
-                    ),
-                  ],
-                )
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 20),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: const Text(
+                                  'مرحله 4',
+                                  style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: const Text(
+                                  'سپس دکمه پیشبینی و طبقه بندی را زده و منتظر بمانید',
+                                  style: Constants.TEXT_STYLE_WHITE_SMALL,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: MyButton(
+                                callBack: () {
+                                  if (!_isActionsDisabled) {
+                                    _predictData();
+                                  } else {
+                                    MyApp.showSnackBar(context,
+                                        content:
+                                            "پیشبینی و طبقه بندی در هنگام فعایتهای دیگر غیر فعال است",
+                                        isError: true);
+                                  }
+                                },
+                                indicatorColor: Constants.COLOR_MAIN_DARK,
+                                isLoading: _predictLoading,
+                                buttonText: 'پیشبینی و طبقه بندی',
+                                width: width * 8 / 10,
+                                buttonColor: Constants.COLOR_WHITE_MAIN,
+                                overlayColor: Constants.COLOR_BUTTON_OVERLAY
+                                    .withOpacity(0.5),
+                                buttonTextStyle:
+                                    Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: Text(
+                                  'جواب سرور : $_predictRes',
+                                  style: _predictResIsError
+                                      ? Constants.TEXT_STYLE_ERROR_SMALL
+                                      : Constants.TEXT_STYLE_WHITE_SMALL,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 40),
+                            child: _divider(height, width),
+                          ),
+                        ],
+                      )
                     : Container(),
                 _haspredicted
                     ? Column(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 20),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: const Text(
-                            'مرحله 5',
-                            style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: const Text(
-                            'در نهایت دکمه گزارش را فشار دهید',
-                            style: Constants.TEXT_STYLE_WHITE_SMALL,
-                          )),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: MyButton(
-                          callBack: () {
-                            _getResult(height, width);
-                          },
-                          indicatorColor: Constants.COLOR_MAIN_DARK,
-                          isLoading: _resultLoading,
-                          buttonText: 'مشاهده گزارش',
-                          width: width * 8 / 10,
-                          buttonColor: Constants.COLOR_WHITE_MAIN,
-                          overlayColor: Constants.COLOR_BUTTON_OVERLAY
-                              .withOpacity(0.5),
-                          buttonTextStyle:
-                          Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD),
-                    ),
-                    _resultResIsError
-                        ? Padding(
-                      padding: EdgeInsets.only(top: height / 80),
-                      child: Container(
-                          width: width * 8 / 10,
-                          child: Text(
-                            'جواب سرور : $_resultRes',
-                            style: _resultResIsError
-                                ? Constants.TEXT_STYLE_ERROR_SMALL
-                                : Constants.TEXT_STYLE_WHITE_SMALL,
-                          )),
-                    )
-                        : Container(),
-                    _predictedModels.length != 0
-                        ? Padding(
-                      padding: EdgeInsets.only(top: height / 20),
-                      child: Column(
-                        children: _predictecdWidget,
-                      ),
-                    )
-                        : Container(),
-                    Padding(
-                      padding: EdgeInsets.only(top: height / 20),
-                      child: Container(),
-                    ),
-                  ],
-                )
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 20),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: const Text(
+                                  'مرحله 5',
+                                  style: Constants.TEXT_STYLE_WHITE_MEDIUM_BOLD,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: Container(
+                                width: width * 8 / 10,
+                                child: const Text(
+                                  'در نهایت دکمه گزارش را فشار دهید',
+                                  style: Constants.TEXT_STYLE_WHITE_SMALL,
+                                )),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 80),
+                            child: MyButton(
+                                callBack: () {
+                                  _getResult(height, width);
+                                },
+                                indicatorColor: Constants.COLOR_MAIN_DARK,
+                                isLoading: _resultLoading,
+                                buttonText: 'مشاهده گزارش',
+                                width: width * 8 / 10,
+                                buttonColor: Constants.COLOR_WHITE_MAIN,
+                                overlayColor: Constants.COLOR_BUTTON_OVERLAY
+                                    .withOpacity(0.5),
+                                buttonTextStyle:
+                                    Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD),
+                          ),
+                          _resultResIsError
+                              ? Padding(
+                                  padding: EdgeInsets.only(top: height / 80),
+                                  child: Container(
+                                      width: width * 8 / 10,
+                                      child: Text(
+                                        'جواب سرور : $_resultRes',
+                                        style: _resultResIsError
+                                            ? Constants.TEXT_STYLE_ERROR_SMALL
+                                            : Constants.TEXT_STYLE_WHITE_SMALL,
+                                      )),
+                                )
+                              : Container(),
+                          _predictedModels.length != 0
+                              ? Padding(
+                                  padding: EdgeInsets.only(top: height / 20),
+                                  child: Column(
+                                    children: [
+                                      Column(
+                                        children: _predictecdWidget,
+                                      ),
+                                      Container(
+                                        width: width * 8 / 10,
+                                        child: Row(
+                                          children: [
+                                            Column(
+                                              children: [
+                                                Text(
+                                                  _posMoodNum.toString(),
+                                                  style: Constants
+                                                      .TEXT_STYLE_WHITE_TITLE_BOLD,
+                                                ),
+                                                SizedBox(height: 5,),
+                                                Text(
+                                                  "Positives",
+                                                  style: Constants
+                                                      .TEXT_STYLE_GREEN_MOOD_SMALL,
+                                                )
+                                              ],
+                                            ),
+                                            Column(
+                                              children: [
+                                                Text(
+                                                  _nutMoodCount.toString(),
+                                                  style: Constants
+                                                      .TEXT_STYLE_WHITE_TITLE_BOLD,
+                                                ),
+                                                SizedBox(height: 5,),
+                                                Text(
+                                                  "Neutrals",
+                                                  style: Constants
+                                                      .TEXT_STYLE_WHITE_MEDIUM,
+                                                )
+                                              ],
+                                            ),
+                                            Column(
+                                              children: [
+                                                Text(
+                                                  _negMoodCount.toString(),
+                                                  style: Constants
+                                                      .TEXT_STYLE_WHITE_TITLE_BOLD,
+                                                ),
+                                                SizedBox(height: 5,),
+                                                Text(
+                                                  "Negatives",
+                                                  style: Constants
+                                                      .TEXT_STYLE_BLUE_MOOD_SMALL,
+                                                )
+                                              ],
+                                            ),
+                                          ],
+                                          mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : Container(),
+
+                          Padding(
+                            padding: EdgeInsets.only(top: height / 20),
+                            child: Container(),
+                          ),
+                        ],
+                      )
                     : Container()
               ],
             ),
@@ -557,11 +634,11 @@ class _HomePageState extends State<HomePage> {
                     ),
                     Text(
                       model.mood,
-                      style: model.mood == "neutral" ? Constants
-                          .TEXT_STYLE_WHITE_SMALL_BOLD : model.mood ==
-                          "positive"
-                          ? Constants.TEXT_STYLE_GREEN_MOOD_SMALL
-                          : Constants.TEXT_STYLE_BLUE_MOOD_SMALL,
+                      style: model.mood == "neutral"
+                          ? Constants.TEXT_STYLE_WHITE_SMALL_BOLD
+                          : model.mood == "positive"
+                              ? Constants.TEXT_STYLE_GREEN_MOOD_SMALL
+                              : Constants.TEXT_STYLE_BLUE_MOOD_SMALL,
                     )
                   ]),
             ),
@@ -572,8 +649,8 @@ class _HomePageState extends State<HomePage> {
                 width: width * 8 / 10,
                 decoration: BoxDecoration(
                   color: Constants.COLOR_WHITE_MAIN,
-                  borderRadius: BorderRadius.circular(
-                      Constants.TEXT_INPUT_ROUNDNESS),
+                  borderRadius:
+                      BorderRadius.circular(Constants.TEXT_INPUT_ROUNDNESS),
                 ),
               ),
             )
@@ -623,7 +700,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     var response =
-    await API.Instance!.post("model-controller/process-raw-data", {});
+        await API.Instance!.post("model-controller/process-raw-data", {});
     if (response.isFailed) {
       setState(() {
         _processLoading = false;
@@ -681,6 +758,9 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _predictedModels = [];
       _predictecdWidget = [];
+      _posMoodNum = 0;
+      _negMoodCount = 0;
+      _nutMoodCount = 0;
       _resultLoading = true;
       _isActionsDisabled = true;
       _resultResIsError = false;
@@ -709,41 +789,37 @@ class _HomePageState extends State<HomePage> {
     for (var i = 0; i < response.data.length; i++) {
       _predictedModels.add(PredictModel.fromJson(response.data[i]));
     }
-    setState(() {
-      for (var i = 0; i < _predictedModels.length; i++) {
-        _predictecdWidget.add(
-            _predictedItemWidget(_predictedModels[i], height, width));
+    List<PredictModel> _orderd = [];
+
+    for (var i = 0; i < _predictedModels.length; i++) {
+      for (int j = 0; j < _predictedModels.length; j++) {
+        String str = _predictedModels[j].filename.split('-')[0];
+        if (str == i.toString()) {
+          _orderd.add(_predictedModels[j]);
+        }
       }
+    }
+    for (var i = 0; i < _orderd.length; i++) {
+      if(_orderd[i].mood=='positive'){
+        _posMoodNum++;
+      }
+      else if(_orderd[i].mood=='negative'){
+        _negMoodCount++;
+      }
+      else
+      {
+        _nutMoodCount++;
+      }
+      _predictecdWidget.add(_predictedItemWidget(_orderd[i], height, width));
+    }
+    setState(() {
+
       _resultLoading = false;
       _isActionsDisabled = false;
       _resultRes = response.data.toString();
     });
   }
 
-  //  void _getModelStatusAPI() async {
-  //     var response = await API.Instance!.get("/model-controller/model-status");
-  //     if (response.isFailed) {
-  //       setState(() {
-  //         _loading = false;
-  //         _error = Constants.SERVER_ERROR;
-  //       });
-  //       return;
-  //     }
-  //     if (response.error != "") {
-  //       setState(() {
-  //         _loading = false;
-  //         _error = Constants.MODEL_ERROR;
-  //       });
-  //       return;
-  //     }
-  //     setState(() {
-  //       _loading = false;
-  //       _error = '';
-  //     });
-  //     Future.delayed(const Duration(milliseconds: 1500), () {
-  //       MyApp.gotoPageWithoutBack(context, Routes.HOME);
-  //     });
-  //   }
   _divider(double height, double width) {
     return Container(
       height: 0.75,
