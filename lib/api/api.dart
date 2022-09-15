@@ -12,7 +12,7 @@ class API {
     Instance = API();
   }
 
-  static String _apiBaseURL = "http://" + Constants.LOCAL_HOST + "/api/";
+  static String _apiBaseURL = "http://" + Constants.REAL_HOST + "/api/";
 
   String _makeApiURL(String path) {
     if (path.startsWith("/")) {
