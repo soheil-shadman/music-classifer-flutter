@@ -21,14 +21,17 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final record = Record();
+  final ScrollController _controller = ScrollController();
 
   // Permissions
   bool has_storage_perm = false;
   bool has_audio_perm = false;
 
   // Recording
+  static int MAX_DUR = 31;
+
   late Timer _timer;
-  int _recordRemainDuration = 25;
+  int _recordRemainDuration = 0;
   int _recordTime = 0;
   bool _isRecording = false;
   bool _hasFile = false;
@@ -63,6 +66,13 @@ class _HomePageState extends State<HomePage> {
   int _nutMoodCount = 0;
   List<PredictModel> _predictedModels = [];
   List<Widget> _predictecdWidget = [];
+
+  //result
+  int _feedBackMood = -1;
+  bool _feedBackResIsError = false;
+  bool _feedBackLoading = false;
+  String _feedBackRes = '';
+  bool _hasFeedback = false;
 
   _requestAudioPermission() async {
     if (Platform.isAndroid) {
@@ -119,6 +129,11 @@ class _HomePageState extends State<HomePage> {
         _posMoodNum = 0;
         _negMoodCount = 0;
         _nutMoodCount = 0;
+        _feedBackMood = -1;
+        _feedBackResIsError = false;
+        _feedBackLoading = false;
+        _feedBackRes = '';
+        _hasFeedback=false;
       });
       await record.start(
         path: Constants.SAVE_AUDIO_PATH_FOLDER + filename,
@@ -141,7 +156,7 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             timer.cancel();
             _stopRecording();
-            _recordRemainDuration = 25;
+            _recordRemainDuration = MAX_DUR;
           });
         } else {
           setState(() {
@@ -154,6 +169,15 @@ class _HomePageState extends State<HomePage> {
         }
       },
     );
+  }
+
+  void _scrollDown() {
+    _controller.animateTo(
+      _controller.position.maxScrollExtent,
+      duration: Duration(seconds: 1),
+      curve: Curves.fastOutSlowIn,
+    );
+    print('annn');
   }
 
   _stopRecording() async {
@@ -173,6 +197,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
+    _recordRemainDuration = MAX_DUR;
     _requestAudioPermission();
     super.initState();
   }
@@ -188,6 +213,7 @@ class _HomePageState extends State<HomePage> {
           padding: EdgeInsets.only(top: Constants.SAFE_AREA_PADDING),
           width: width,
           child: SingleChildScrollView(
+            controller: _controller,
             child: Column(
               children: [
                 Padding(
@@ -204,7 +230,7 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                       width: width * 8 / 10,
                       child: const Text(
-                        'ابتدا صدا را ضبط کنید ( بین 6 تا 25 ثانیه )',
+                        'ابتدا صدا را ضبط کنید ( بین 6 تا 31 ثانیه )',
                         style: Constants.TEXT_STYLE_WHITE_SMALL,
                       )),
                 ),
@@ -214,12 +240,12 @@ class _HomePageState extends State<HomePage> {
                       callBack: () {
                         if (!_isActionsDisabled) {
                           if (_isRecording) {
-                            if (25 - _recordRemainDuration <= 6) {
+                            if (MAX_DUR - _recordRemainDuration <= 6) {
                               MyApp.showSnackBar(context,
                                   content: "حداقل 6.1 ثانیه صبر کنید",
                                   isError: true);
                             } else {
-                              _recordRemainDuration = 25;
+                              _recordRemainDuration = MAX_DUR;
                               _timer.cancel();
                               _stopRecording();
                             }
@@ -530,7 +556,9 @@ class _HomePageState extends State<HomePage> {
                                                   style: Constants
                                                       .TEXT_STYLE_WHITE_TITLE_BOLD,
                                                 ),
-                                                SizedBox(height: 5,),
+                                                SizedBox(
+                                                  height: 5,
+                                                ),
                                                 Text(
                                                   "Positives",
                                                   style: Constants
@@ -545,7 +573,9 @@ class _HomePageState extends State<HomePage> {
                                                   style: Constants
                                                       .TEXT_STYLE_WHITE_TITLE_BOLD,
                                                 ),
-                                                SizedBox(height: 5,),
+                                                SizedBox(
+                                                  height: 5,
+                                                ),
                                                 Text(
                                                   "Neutrals",
                                                   style: Constants
@@ -560,7 +590,9 @@ class _HomePageState extends State<HomePage> {
                                                   style: Constants
                                                       .TEXT_STYLE_WHITE_TITLE_BOLD,
                                                 ),
-                                                SizedBox(height: 5,),
+                                                SizedBox(
+                                                  height: 5,
+                                                ),
                                                 Text(
                                                   "Negatives",
                                                   style: Constants
@@ -570,14 +602,98 @@ class _HomePageState extends State<HomePage> {
                                             ),
                                           ],
                                           mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
+                                              MainAxisAlignment.spaceBetween,
                                         ),
                                       ),
                                     ],
                                   ),
                                 )
                               : Container(),
-
+                          _predictedModels.length != 0? Padding(
+                            padding: EdgeInsets.only(top: height / 20),
+                            child: Column(
+                              children: [
+                                Column(
+                                  children: [
+                                    _divider(height, width),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.only(top: height / 20),
+                                      child: Container(
+                                          width: width * 8 / 10,
+                                          child: const Text(
+                                            'مرحله آخر ( دلبخواهی )',
+                                            style: Constants
+                                                .TEXT_STYLE_WHITE_MEDIUM_BOLD,
+                                          )),
+                                    ),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.only(top: height / 80),
+                                      child: Container(
+                                          width: width * 8 / 10,
+                                          child: const Text(
+                                            'در صورتی که مود غلط بوده، مود صحیح را انتخاب کنید',
+                                            style: Constants
+                                                .TEXT_STYLE_WHITE_SMALL,
+                                          )),
+                                    ),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.only(top: height / 80),
+                                      child: _moodRow(height, width),
+                                    ),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.only(top: height / 40),
+                                      child: MyButton(
+                                          callBack: () {
+                                            if (!_isActionsDisabled) {
+                                              _feedBack();
+                                            } else {
+                                              MyApp.showSnackBar(context,
+                                                  content:
+                                                      "بازخورد در هنگام فعایتهای دیگر غیر فعال است",
+                                                  isError: true);
+                                            }
+                                          },
+                                          indicatorColor:
+                                              Constants.COLOR_MAIN_DARK,
+                                          isLoading: _feedBackLoading,
+                                          buttonText: 'فرستادن',
+                                          width: width * 8 / 10,
+                                          buttonColor:
+                                              Constants.COLOR_WHITE_MAIN,
+                                          overlayColor: Constants
+                                              .COLOR_BUTTON_OVERLAY
+                                              .withOpacity(0.5),
+                                          buttonTextStyle: Constants
+                                              .TEXT_STYLE_BLACK_MEDIUM_BOLD),
+                                    ),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.only(top: height / 80),
+                                      child: Container(
+                                          width: width * 8 / 10,
+                                          child: Text(
+                                            'جواب سرور : $_feedBackRes',
+                                            style: _feedBackResIsError
+                                                ? Constants
+                                                    .TEXT_STYLE_ERROR_SMALL
+                                                : Constants
+                                                    .TEXT_STYLE_WHITE_SMALL,
+                                          )),
+                                    ),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.only(top: height / 40),
+                                      child: _divider(height, width),
+                                    )
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ):Container(),
                           Padding(
                             padding: EdgeInsets.only(top: height / 20),
                             child: Container(),
@@ -660,6 +776,71 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  _moodRow(double height, double width) {
+    return Container(
+      width: width * 8 / 10,
+      height: height / 18,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _feedBackMood=0;
+              });
+            },
+            child: Container(
+              width: width * 2.5 / 10,
+              height: height / 18,
+              decoration: BoxDecoration(
+                color:_feedBackMood==0?Constants.COLOR_GREE :Constants.COLOR_WHITE_MAIN,
+                borderRadius: BorderRadius.circular(Constants.APP_ROUNDNESS),
+
+              ),
+              child: Center(child: Text("Positive",style: Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD,),),
+            ),
+          ),
+
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _feedBackMood=1;
+              });
+            },
+            child: Container(
+              width: width * 2.5 / 10,
+              height: height / 18,
+              decoration: BoxDecoration(
+                color:_feedBackMood==1?Constants.COLOR_LIGHT_GRAY :Constants.COLOR_WHITE_MAIN,
+                borderRadius: BorderRadius.circular(Constants.APP_ROUNDNESS),
+
+              ),
+              child: Center(child: Text("Neutral",style: Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD,),),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _feedBackMood=2;
+              });
+            },
+            child: Container(
+              width: width * 2.5 / 10,
+              height: height / 18,
+              decoration: BoxDecoration(
+                color:_feedBackMood==2?Constants.COLOR_BLUE :Constants.COLOR_WHITE_MAIN,
+                borderRadius: BorderRadius.circular(Constants.APP_ROUNDNESS),
+
+              ),
+              child: Center(child: Text("Negative",style: Constants.TEXT_STYLE_BLACK_MEDIUM_BOLD,),),
+            ),
+          ),
+        ],
+      ),
+
+    );
+  }
+
   _uploadAudio() async {
     setState(() {
       _uploadLoading = true;
@@ -699,8 +880,8 @@ class _HomePageState extends State<HomePage> {
       _processResIsError = false;
     });
 
-    var response =
-        await API.Instance!.post("model-controller/process-raw-data", {});
+    var response = await API.Instance!.post("model-controller/process-raw-data",
+        {"session_id": Constants.SESSION_ID, "filename": filename});
     if (response.isFailed) {
       setState(() {
         _processLoading = false;
@@ -717,6 +898,45 @@ class _HomePageState extends State<HomePage> {
       _processRes = response.data;
     });
   }
+  _feedBack() async {
+    if(_hasFeedback)
+      {
+        MyApp.showSnackBar(context, content: "شما قبلا بازخورد داده اید !");
+        return;
+      }
+    if(_feedBackMood==-1){
+      MyApp.showSnackBar(context, content: "مودی انتخاب نشده", isError: true);
+      return;
+    }
+    setState(() {
+      _feedBackLoading = true;
+      _isActionsDisabled = true;
+      _feedBackResIsError = false;
+    });
+
+
+    var response = await API.Instance!.post("model-controller/feed_back_on_audio",
+        {"session_id" : Constants.SESSION_ID,
+          "filename":filename,
+          "mood":_feedBackMood==0?"positive":_feedBackMood==1?"neutral":"negative",
+          "audio_duration":_recordTime});
+    if (response.isFailed) {
+      setState(() {
+        _feedBackLoading = false;
+        _feedBackRes = response.error!;
+        _isActionsDisabled = false;
+        _feedBackResIsError = true;
+      });
+      return;
+    }
+    setState(() {
+      _feedBackMood=-1;
+      _hasFeedback=true;
+      _feedBackLoading = false;
+      _isActionsDisabled = false;
+      _feedBackRes = response.data;
+    });
+  }
 
   _predictData() async {
     setState(() {
@@ -727,7 +947,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     var response = await API.Instance!.post("model-controller/predict-items",
-        {"result_number": 1, "delete_data": "True"});
+        {"session_id": Constants.SESSION_ID, "filename": filename});
     if (response.isFailed) {
       setState(() {
         _predictLoading = false;
@@ -766,8 +986,9 @@ class _HomePageState extends State<HomePage> {
       _resultResIsError = false;
     });
 
-    var response = await API.Instance!
-        .post("model-controller/get_single_result", {"result_number": 1});
+    var response = await API.Instance!.post(
+        "model-controller/get_session_file_result",
+        {"session_id": Constants.SESSION_ID, "filename": filename});
     if (response.isFailed) {
       setState(() {
         _resultLoading = false;
@@ -800,23 +1021,22 @@ class _HomePageState extends State<HomePage> {
       }
     }
     for (var i = 0; i < _orderd.length; i++) {
-      if(_orderd[i].mood=='positive'){
+      if (_orderd[i].mood == 'positive') {
         _posMoodNum++;
-      }
-      else if(_orderd[i].mood=='negative'){
+      } else if (_orderd[i].mood == 'negative') {
         _negMoodCount++;
-      }
-      else
-      {
+      } else {
         _nutMoodCount++;
       }
       _predictecdWidget.add(_predictedItemWidget(_orderd[i], height, width));
     }
     setState(() {
-
       _resultLoading = false;
       _isActionsDisabled = false;
       _resultRes = response.data.toString();
+    });
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      _scrollDown();
     });
   }
 
@@ -834,6 +1054,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _timer.cancel();
+    _controller.dispose();
     super.dispose();
   }
 }

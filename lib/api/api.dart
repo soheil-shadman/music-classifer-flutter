@@ -12,7 +12,7 @@ class API {
     Instance = API();
   }
 
-  static String _apiBaseURL = "http://" + Constants.REAL_HOST + "/api/";
+  static String _apiBaseURL = "http://" + Constants.LOCAL_HOST + "/api/";
 
   String _makeApiURL(String path) {
     if (path.startsWith("/")) {
@@ -20,18 +20,14 @@ class API {
     }
     return _apiBaseURL + path;
   }
+  Map<String, String> _headers = { "Content-Type": 'application/json',"api-token":Constants.API_TOKEN};
 
-  Map<String, String> _makeHeaders() {
-    var result = <String, String>{};
-    result['Content-Type'] = 'application/json';
-    return result;
-  }
 
   Future<APIResponse> get(String path) async {
     try {
       print("GET=>$path");
       var httpResponse =
-          await http.get(Uri.parse(_makeApiURL(path)), headers: _makeHeaders());
+          await http.get(Uri.parse(_makeApiURL(path)), headers: _headers);
       print("GET=>$path=>${httpResponse.body}");
       var js = jsonDecode(httpResponse.body);
       return APIResponse.fromJson(js);
@@ -49,9 +45,11 @@ class API {
       var postUri = Uri.parse(_apiBaseURL + path);
       http.MultipartRequest request =
           new http.MultipartRequest("POST", postUri);
+
       print("POST=>$path=>${jsonEncode(filepath)}");
       var multipartFile = await http.MultipartFile.fromPath('file', filepath);
-      request.headers.addAll(_makeHeaders());
+      request.headers.addAll(_headers);
+      request.fields['session_id'] = Constants.SESSION_ID.toString();
       request.files.add(multipartFile);
       var httpResponse = await request.send();
       // print("POST=>$path=>${httpResponse.body}");
@@ -83,7 +81,7 @@ class API {
     try {
       print("POST=>$path=>${jsonEncode(body)}");
       var httpResponse = await http.post(Uri.parse(_makeApiURL(path)),
-          headers: _makeHeaders(), body: jsonEncode(body));
+          headers: _headers, body: jsonEncode(body));
       print("POST=>$path=>${httpResponse.body}");
       var js = jsonDecode(httpResponse.body);
       var resp = APIResponse.fromJson(js);

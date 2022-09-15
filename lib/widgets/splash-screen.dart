@@ -112,8 +112,8 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  void _getModelStatusAPI() async {
-    var response = await API.Instance!.get("/model-controller/model-status");
+  void _getSessionIdAndStatusAPI() async {
+    var response = await API.Instance!.post("/model-controller/make-session",{});
     if (response.isFailed) {
       setState(() {
         _loading = false;
@@ -130,6 +130,7 @@ class _SplashScreenState extends State<SplashScreen> {
     }
     setState(() {
       _loading = false;
+      Constants.SESSION_ID=int.parse(response.data);
       _error = '';
     });
     Future.delayed(const Duration(milliseconds: 1500), () {
@@ -156,6 +157,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
       return;
     }
-    _getModelStatusAPI();
+    _getSessionIdAndStatusAPI();
   }
 }

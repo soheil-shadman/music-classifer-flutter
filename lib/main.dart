@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
       {String content = "تست", bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       backgroundColor:
-          isError ? Constants.COLOR_RED_ERROR : Constants.COLOR_MAIN_DARK,
+          isError ? Constants.COLOR_RED_ERROR : Constants.COLOR_GREE,
       content: Text(
         content,
         style: Constants.TEXT_STYLE_WHITE_SMALL_BOLD,
