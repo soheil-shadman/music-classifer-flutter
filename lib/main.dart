@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mood_classifer/routs.dart';
 import 'package:mood_classifer/widgets/splash-screen.dart';
@@ -10,6 +11,9 @@ import 'api/api.dart';
 import 'constants.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   API.Init();
   runApp(const MyApp());
 }

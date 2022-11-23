@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
                                   height: width / 6,
                                   width: width / 6,
                                   child: const LoadingIndicator(
-                                    indicatorType: Indicator.pacman,
+                                    indicatorType: Indicator.orbit,
                                     colors: [
                                       Constants.COLOR_WHITE_MAIN,
                                     ],
